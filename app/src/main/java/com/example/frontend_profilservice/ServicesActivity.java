@@ -46,7 +46,11 @@ public class ServicesActivity extends AppCompatActivity {
         
         // Role Logic for Add Event
         ImageView ivAddEvent = findViewById(R.id.iv_add_event);
-        boolean isOrganizer = true; // Hardcoded for demo
+        
+        // Retrieve user role from SharedPreferences
+        android.content.SharedPreferences preferences = getSharedPreferences("EventHubPrefs", MODE_PRIVATE);
+        String role = preferences.getString("user_role", "STUDENT");
+        boolean isOrganizer = "ORGANIZER".equalsIgnoreCase(role);
         
         if (ivAddEvent != null) {
             if (isOrganizer) {
