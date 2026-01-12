@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="purple_custom">#69539E</color>
+    <color name="background_gray">#EFEFEF</color>
+    <color name="light_purple">#D1C4E9</color> <!-- Added for secondary buttons -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="eventhub_purple">#7F57F1</color>
+    <color name="input_background">#F8F9FA</color>
+    <color name="input_border">#E0E0E0</color>
+    <color name="event_purple">#63569D</color>
+    <color name="hub_pink">#D145C2</color>
+</resources>
