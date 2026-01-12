@@ -59,7 +59,7 @@ public class LauncherActivity extends AppCompatActivity {
 
                     Intent nextScreen;
                     if (isRemembered) {
-                        nextScreen = new Intent(LauncherActivity.this, DashboardActivity.class);
+                        nextScreen = new Intent(LauncherActivity.this, HomeActivity.class);
                     } else {
                         nextScreen = new Intent(LauncherActivity.this, LoginActivity.class);
                     }

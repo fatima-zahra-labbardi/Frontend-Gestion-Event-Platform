@@ -17,15 +17,18 @@ import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
 
-    private boolean isOrganizer = true; // Toggle for testing: true = Organizer, false = Student
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        // Retrieve user role from SharedPreferences
+        android.content.SharedPreferences preferences = getSharedPreferences("EventHubPrefs", MODE_PRIVATE);
+        String role = preferences.getString("user_role", "STUDENT");
+        boolean isOrganizer = "ORGANIZER".equalsIgnoreCase(role);
+
         // Header Logic
-        ImageView ivAddEvent = findViewById(R.id.iv_add_event);
+        android.widget.ImageView ivAddEvent = findViewById(R.id.iv_add_event);
         ImageView ivNotification = findViewById(R.id.iv_notification);
         
         ivNotification.setOnClickListener(v -> startActivity(new Intent(this, NotificationActivity.class)));

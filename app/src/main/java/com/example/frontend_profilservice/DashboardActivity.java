@@ -48,10 +48,19 @@ public class DashboardActivity extends AppCompatActivity {
         
         // Log out
         findViewById(R.id.btn_logout).setOnClickListener(v -> {
+            // Clear session data
+            android.content.SharedPreferences preferences = getSharedPreferences("EventHubPrefs", MODE_PRIVATE);
+            android.content.SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("is_remembered", false);
+            editor.putString("user_email", null);
+            editor.putString("user_role", null);
+            editor.apply();
+
             Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
             // Clear back stack so user can't go back to dashboard
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
+            finish();
         });
 
         // Notification Icon
