@@ -127,7 +127,6 @@
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_edittext_white"
                 android:padding="12dp"
-                android:text="Salma Rafik"
                 android:textColor="@color/black"
                 app:layout_constraintTop_toBottomOf="@+id/label_name" />
 
@@ -148,7 +147,6 @@
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_edittext_white"
                 android:padding="12dp"
-                android:text="hhhhhhhhhhhhhhhhhhhhhhhhhhhhh"
                 android:textColor="@color/black"
                 app:layout_constraintTop_toBottomOf="@+id/label_bio" />
 

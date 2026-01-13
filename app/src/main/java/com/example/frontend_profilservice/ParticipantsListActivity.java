@@ -12,14 +12,31 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.example.frontend_profilservice.api.RetrofitClient;
+import com.example.frontend_profilservice.models.ProfileResponse;
+import com.example.frontend_profilservice.models.RegistrationResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import android.widget.Toast;
 
 public class ParticipantsListActivity extends AppCompatActivity {
+
+    private long eventId;
+    private ParticipantsAdapter adapter;
+    private List<RegistrationResponse> participantsList = new ArrayList<>();
+    private Map<Long, String> userNamesCache = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_participants_list);
+
+        eventId = getIntent().getLongExtra("EXTRA_EVENT_ID", -1L);
 
         // Header
         ImageView ivBack = findViewById(R.id.iv_back);
@@ -29,32 +46,66 @@ public class ParticipantsListActivity extends AppCompatActivity {
         RecyclerView rvParticipants = findViewById(R.id.rv_participants);
         if (rvParticipants != null) {
             rvParticipants.setLayoutManager(new LinearLayoutManager(this));
-            
-            List<Participant> participants = new ArrayList<>();
-            // Sample data from screenshot
-            participants.add(new Participant("David Sibia", "Just now"));
-            participants.add(new Participant("David Sibia", "5 min ago"));
-            participants.add(new Participant("David Sibia", "20 min ago"));
-            participants.add(new Participant("David Sibia", "1 hr ago"));
-            participants.add(new Participant("David Sibia", "9 hr ago"));
-            participants.add(new Participant("David Sibia", "Tue , 5:10 pm"));
-            participants.add(new Participant("David Sibia", "Wed, 3:30 pm"));
-            
-            ParticipantsAdapter adapter = new ParticipantsAdapter(participants);
+            adapter = new ParticipantsAdapter(participantsList);
             rvParticipants.setAdapter(adapter);
+        }
+
+        if (eventId != -1L) {
+            fetchParticipants();
         }
 
         NavigationUtils.setupNavigation(this, 1);
     }
 
-    private static class Participant {
-        String name, time;
-        Participant(String n, String t) { name = n; time = t; }
+    private void fetchParticipants() {
+        RetrofitClient.getApiService().getEventRegistrations(eventId).enqueue(new Callback<List<RegistrationResponse>>() {
+            @Override
+            public void onResponse(Call<List<RegistrationResponse>> call, Response<List<RegistrationResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    participantsList.clear();
+                    participantsList.addAll(response.body());
+                    
+                    // Trigger name fetching for each participant
+                    for (RegistrationResponse reg : response.body()) {
+                        fetchUserName(reg.getUserId());
+                    }
+                    
+                    adapter.notifyDataSetChanged();
+                } else {
+                    Toast.makeText(ParticipantsListActivity.this, "Impossible de charger les participants", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<RegistrationResponse>> call, Throwable t) {
+                Toast.makeText(ParticipantsListActivity.this, "Erreur réseau", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    private static class ParticipantsAdapter extends RecyclerView.Adapter<ParticipantsAdapter.ParticipantViewHolder> {
-        private final List<Participant> list;
-        ParticipantsAdapter(List<Participant> l) { list = l; }
+    private void fetchUserName(long userId) {
+        if (userNamesCache.containsKey(userId)) return;
+
+        // Fetch profile to get the full name
+        RetrofitClient.getApiService().getProfileByUserId(userId).enqueue(new Callback<ProfileResponse>() {
+            @Override
+            public void onResponse(Call<ProfileResponse> call, Response<ProfileResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    userNamesCache.put(userId, response.body().getFullName());
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProfileResponse> call, Throwable t) {
+                // Ignore failure, will keep "User #ID"
+            }
+        });
+    }
+
+    private class ParticipantsAdapter extends RecyclerView.Adapter<ParticipantsAdapter.ParticipantViewHolder> {
+        private final List<RegistrationResponse> list;
+        ParticipantsAdapter(List<RegistrationResponse> l) { list = l; }
 
         @NonNull @Override
         public ParticipantViewHolder onCreateViewHolder(@NonNull ViewGroup p, int t) {
@@ -63,16 +114,17 @@ public class ParticipantsListActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull ParticipantViewHolder h, int pos) {
-            Participant p = list.get(pos);
-            h.name.setText(p.name);
-            h.time.setText(p.time);
-            // Image is default for now
+            RegistrationResponse p = list.get(pos);
+            String name = userNamesCache.get(p.getUserId());
+            
+            h.name.setText(name != null ? name : "User #" + p.getUserId());
+            h.time.setText("Inscrit le: " + p.getRegisteredAt());
         }
 
         @Override
         public int getItemCount() { return list.size(); }
 
-        static class ParticipantViewHolder extends RecyclerView.ViewHolder {
+        class ParticipantViewHolder extends RecyclerView.ViewHolder {
             TextView name, time;
             ImageView image;
             ParticipantViewHolder(View v) {

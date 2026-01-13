@@ -84,7 +84,9 @@
                 android:background="@android:color/transparent"
                 android:hint="Event Time"
                 android:paddingHorizontal="12dp"
-                android:inputType="datetime"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"
                 android:textColor="@color/black"
                 android:textSize="14sp"/>
         </LinearLayout>

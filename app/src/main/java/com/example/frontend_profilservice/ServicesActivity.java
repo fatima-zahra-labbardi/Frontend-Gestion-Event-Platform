@@ -11,17 +11,36 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.frontend_profilservice.api.RetrofitClient;
+import com.example.frontend_profilservice.models.EventResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import android.widget.Toast;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class ServicesActivity extends AppCompatActivity {
+
+    private RecyclerView rvEvents;
+    private EventsAdapter adapter;
+    private List<EventResponse> eventList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_services);
 
-        // Back Button - Goes to Home Activity
+        // UI Setup
+        rvEvents = findViewById(R.id.rv_events);
+        if (rvEvents != null) {
+            rvEvents.setLayoutManager(new LinearLayoutManager(this));
+            adapter = new EventsAdapter(eventList);
+            rvEvents.setAdapter(adapter);
+        }
+
+        // Back Button
         ImageView ivBack = findViewById(R.id.iv_back);
         if (ivBack != null) {
             ivBack.setOnClickListener(v -> {
@@ -30,70 +49,55 @@ public class ServicesActivity extends AppCompatActivity {
             });
         }
 
-        // Notification Icon
-        ImageView ivNotification = findViewById(R.id.iv_notification);
-        if (ivNotification != null) {
-            ivNotification.setOnClickListener(v -> startActivity(new android.content.Intent(this, NotificationActivity.class)));
-        }
+        // Fetch Data
+        fetchEvents();
 
-        // Search Icon
-        ImageView ivSearch = findViewById(R.id.iv_search);
-        if (ivSearch != null) {
-            ivSearch.setOnClickListener(v -> {
-                startActivity(new android.content.Intent(ServicesActivity.this, SearchEventsActivity.class));
-            });
-        }
-        
-        // Role Logic for Add Event
+        // Role-based Add Event button visibility
         ImageView ivAddEvent = findViewById(R.id.iv_add_event);
-        
-        // Retrieve user role from SharedPreferences
         android.content.SharedPreferences preferences = getSharedPreferences("EventHubPrefs", MODE_PRIVATE);
         String role = preferences.getString("user_role", "STUDENT");
         boolean isOrganizer = "ORGANIZER".equalsIgnoreCase(role);
-        
+
         if (ivAddEvent != null) {
             if (isOrganizer) {
                 ivAddEvent.setVisibility(View.VISIBLE);
-                ivAddEvent.setOnClickListener(v -> {
-                     startActivity(new android.content.Intent(ServicesActivity.this, CreateEventActivity.class));
-                });
+                ivAddEvent.setOnClickListener(v -> startActivity(new android.content.Intent(this, CreateEventActivity.class)));
             } else {
                 ivAddEvent.setVisibility(View.GONE);
             }
         }
 
-        // Events List Setup
-        RecyclerView rvEvents = findViewById(R.id.rv_events);
-        if (rvEvents != null) {
-            rvEvents.setLayoutManager(new LinearLayoutManager(this));
-            
-            List<Event> events = new ArrayList<>();
-            // Adding events with simulated image resources or logic to mock "no photo"
-            events.add(new Event("Jo Malone London's Mother's Day Presents", "Radius Gallery • Santa Cruz, CA", "Wed, Apr 28 • 5:30 PM", R.drawable.ic_event_default));
-            events.add(new Event("A Virtual Evening of Smooth Jazz", "Lot 13 • Oakland, CA", "Sat, May 1 • 2:00 PM", R.drawable.ic_event_default));
-            events.add(new Event("Women's Leadership Conference 2021", "53 Bush St • San Francisco, CA", "Sat, Apr 24 • 1:30 PM", R.drawable.ic_event_default));
-            
-            EventsAdapter adapter = new EventsAdapter(events);
-            rvEvents.setAdapter(adapter);
+        ImageView ivSearch = findViewById(R.id.iv_search);
+        if (ivSearch != null) {
+            ivSearch.setOnClickListener(v -> startActivity(new android.content.Intent(this, SearchEventsActivity.class)));
         }
 
-        NavigationUtils.setupNavigation(this, 1); // 1 = Services/Grid
+        NavigationUtils.setupNavigation(this, 1);
     }
-    
-    // Inner models and adapters
-    private static class Event {
-        String title, location, date;
-        int imageResId;
-        
-        Event(String t, String l, String d, int img) { 
-            title=t; location=l; date=d; imageResId=img; 
-        }
+
+    private void fetchEvents() {
+        RetrofitClient.getApiService().getAllEvents().enqueue(new Callback<List<EventResponse>>() {
+            @Override
+            public void onResponse(Call<List<EventResponse>> call, Response<List<EventResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    eventList.clear();
+                    eventList.addAll(response.body());
+                    adapter.notifyDataSetChanged();
+                } else {
+                    Toast.makeText(ServicesActivity.this, "Erreur chargement événements", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<EventResponse>> call, Throwable t) {
+                Toast.makeText(ServicesActivity.this, "Problème réseau : " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private static class EventsAdapter extends RecyclerView.Adapter<EventsAdapter.EventViewHolder> {
-        private final List<Event> list;
-        EventsAdapter(List<Event> l) { list = l; }
+        private final List<EventResponse> list;
+        EventsAdapter(List<EventResponse> l) { list = l; }
 
         @NonNull @Override
         public EventViewHolder onCreateViewHolder(@NonNull ViewGroup p, int t) {
@@ -102,24 +106,17 @@ public class ServicesActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull EventViewHolder h, int pos) {
-            Event e = list.get(pos);
-            h.title.setText(e.title);
-            h.location.setText(e.location);
-            if (h.date != null) h.date.setText(e.date);
-            
-            // Set image or default
-            if (e.imageResId != 0) {
-                h.image.setImageResource(e.imageResId);
-            } else {
-                 h.image.setImageResource(R.drawable.ic_event_default);
-            }
+            EventResponse e = list.get(pos);
+            h.title.setText(e.getTitle());
+            h.location.setText(e.getLocation());
+            h.date.setText(e.getEventDate());
+            h.image.setImageResource(R.drawable.ic_event_default); // Image logic placeholder
             
             h.itemView.setOnClickListener(v -> {
                 android.content.Intent i = new android.content.Intent(v.getContext(), EventDetailsActivity.class);
-                i.putExtra("EXTRA_TITLE", e.title);
-                i.putExtra("EXTRA_LOCATION", e.location);
-                // For demonstration: First item is "mine" (I am creator), others are "student view"
-                i.putExtra("EXTRA_IS_CREATOR", pos == 0);
+                i.putExtra("EXTRA_TITLE", e.getTitle());
+                i.putExtra("EXTRA_LOCATION", e.getLocation());
+                i.putExtra("EXTRA_EVENT_ID", e.getId());
                 v.getContext().startActivity(i);
             });
         }
@@ -130,7 +127,6 @@ public class ServicesActivity extends AppCompatActivity {
         static class EventViewHolder extends RecyclerView.ViewHolder {
             TextView title, location, date;
             ImageView image;
-            
             EventViewHolder(View v) {
                 super(v);
                 title = v.findViewById(R.id.tv_event_title);
